@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useBookings } from '@/hooks/useBookings';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { MessageCircle } from 'lucide-react';
+import { ChatModal, ChatNotification } from '@/components/chat';
+import { useChat } from '@/contexts/ChatContext';
+import { Booking } from '@/types';
 
 const statusColors = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -24,6 +29,8 @@ const statusLabels = {
 
 export default function ConsumerDashboard() {
   const { bookings, isLoading } = useBookings();
+  const { unreadCount } = useChat();
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const upcomingBookings = bookings?.filter(
     (b) => b.status !== 'CANCELLED' && b.status !== 'COMPLETED'
@@ -116,7 +123,7 @@ export default function ConsumerDashboard() {
             <div className="space-y-4">
               {recentBookings.map((booking) => (
                 <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1">
                     <h4 className="font-semibold">{booking.service?.title}</h4>
                     <p className="text-sm text-gray-600">
                       {format(new Date(booking.date), 'dd MMMM yyyy', { locale: es })} - {booking.startTime}
@@ -125,10 +132,19 @@ export default function ConsumerDashboard() {
                       Proveedor: {booking.service?.provider?.firstName} {booking.service?.provider?.lastName}
                     </p>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-3">
                     <Badge className={statusColors[booking.status]}>
                       {statusLabels[booking.status]}
                     </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedBooking(booking)}
+                      className="relative"
+                    >
+                      <MessageCircle size={18} className="mr-1" />
+                      Chat
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -136,6 +152,15 @@ export default function ConsumerDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Chat Modal */}
+      {selectedBooking && (
+        <ChatModal
+          booking={selectedBooking}
+          isOpen={!!selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+        />
+      )}
     </div>
   );
 }

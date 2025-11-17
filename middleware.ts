@@ -9,10 +9,9 @@ export function middleware(request: NextRequest) {
   // This middleware can be extended to use httpOnly cookies for better security
 
   // Public paths that don't require authentication
-  const publicPaths = ['/', '/login', '/register', '/services'];
-  const isPublicPath = publicPaths.some(path =>
-    pathname === path || (path === '/services' && pathname.startsWith('/services/'))
-  );
+  const publicPaths = ['/', '/login', '/register', '/auth/login', '/auth/register'];
+  const isPublicPath = publicPaths.some(path => pathname === path) ||
+    pathname.startsWith('/public/');
 
   if (isPublicPath) {
     return NextResponse.next();

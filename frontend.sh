@@ -73,47 +73,52 @@ Comandos disponibles:
 EOF
 }
 
+# Detectar ubicación del docker-compose.yml
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOCKER_COMPOSE_FILE="${SCRIPT_DIR}/../docker-compose.yml"
+DOCKER_COMPOSE_CMD="docker-compose -f ${DOCKER_COMPOSE_FILE}"
+
 # Comandos Docker
 cmd_up() {
     print_info "Levantando frontend..."
-    docker-compose up -d frontend
+    ${DOCKER_COMPOSE_CMD} up -d frontend
     print_success "Frontend iniciado"
     print_info "Frontend: http://localhost:3001"
 }
 
 cmd_down() {
     print_info "Deteniendo frontend..."
-    docker-compose stop frontend
+    ${DOCKER_COMPOSE_CMD} stop frontend
     print_success "Frontend detenido"
 }
 
 cmd_build() {
     print_info "Reconstruyendo imagen del frontend..."
-    docker-compose build --no-cache frontend
+    ${DOCKER_COMPOSE_CMD} build --no-cache frontend
     print_success "Imagen reconstruida"
 }
 
 cmd_rebuild() {
     print_info "Rebuild completo: stop -> build -> up..."
-    docker-compose stop frontend
-    docker-compose build --no-cache frontend
-    docker-compose up -d frontend
+    ${DOCKER_COMPOSE_CMD} stop frontend
+    ${DOCKER_COMPOSE_CMD} build --no-cache frontend
+    ${DOCKER_COMPOSE_CMD} up -d frontend
     print_success "Frontend reconstruido y levantado"
 }
 
 cmd_logs() {
-    docker-compose logs -f frontend
+    ${DOCKER_COMPOSE_CMD} logs -f frontend
 }
 
 cmd_restart() {
     print_info "Reiniciando frontend..."
-    docker-compose restart frontend
+    ${DOCKER_COMPOSE_CMD} restart frontend
     print_success "Frontend reiniciado"
 }
 
 cmd_shell() {
     print_info "Abriendo shell en frontend..."
-    docker-compose exec frontend sh
+    ${DOCKER_COMPOSE_CMD} exec frontend sh
 }
 
 # Desarrollo Local (sin Docker)
@@ -200,7 +205,7 @@ cmd_status() {
     print_header "Estado del Frontend"
     echo ""
     echo "Contenedor:"
-    docker-compose ps frontend 2>/dev/null || echo "No está corriendo en Docker"
+    ${DOCKER_COMPOSE_CMD} ps frontend 2>/dev/null || echo "No está corriendo en Docker"
     echo ""
     echo "Información del proyecto:"
     if [ -f "package.json" ]; then
@@ -219,7 +224,7 @@ cmd_status() {
 }
 
 cmd_ps() {
-    docker-compose ps
+    ${DOCKER_COMPOSE_CMD} ps
 }
 
 # Main

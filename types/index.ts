@@ -125,3 +125,50 @@ export interface ApiError {
   error?: string;
   statusCode: number;
 }
+
+// Chat/Message Types
+export interface Message {
+  id: string;
+  bookingId: string;
+  senderId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  sender?: User;
+  booking?: Booking;
+}
+
+export interface ChatRoom {
+  bookingId: string;
+  booking?: Booking;
+  messages: Message[];
+  participants: {
+    provider: User;
+    consumer: User;
+  };
+}
+
+export interface TypingStatus {
+  bookingId: string;
+  userId: string;
+  isTyping: boolean;
+}
+
+export interface SendMessageDto {
+  bookingId: string;
+  content: string;
+}
+
+export interface JoinChatDto {
+  bookingId: string;
+}
+
+export interface MarkReadDto {
+  messageIds: string[];
+}
+
+export interface ChatHistory {
+  bookingId: string;
+  messages: Message[];
+  booking: Booking;
+}

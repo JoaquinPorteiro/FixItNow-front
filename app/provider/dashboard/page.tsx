@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useServices } from '@/hooks/useServices';
 import { useBookings } from '@/hooks/useBookings';
@@ -8,6 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { MessageCircle } from 'lucide-react';
+import { ChatModal } from '@/components/chat';
+import { useChat } from '@/contexts/ChatContext';
+import { Booking } from '@/types';
 
 const statusColors = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -26,6 +31,8 @@ const statusLabels = {
 export default function ProviderDashboard() {
   const { services, isLoading: servicesLoading } = useServices();
   const { bookings, isLoading: bookingsLoading } = useBookings();
+  const { unreadCount } = useChat();
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const pendingBookings = bookings?.filter((b) => b.status === 'PENDING') || [];
   const activeServices = services?.filter((s) => s.isActive) || [];
@@ -123,7 +130,7 @@ export default function ProviderDashboard() {
             <div className="space-y-4">
               {pendingBookings.slice(0, 5).map((booking) => (
                 <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1">
                     <h4 className="font-semibold">{booking.service?.title}</h4>
                     <p className="text-sm text-gray-600">
                       {format(new Date(booking.date), 'dd MMMM yyyy', { locale: es })} - {booking.startTime}
@@ -136,6 +143,15 @@ export default function ProviderDashboard() {
                     <Badge className={statusColors[booking.status]}>
                       {statusLabels[booking.status]}
                     </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedBooking(booking)}
+                      className="relative"
+                    >
+                      <MessageCircle size={18} className="mr-1" />
+                      Chat
+                    </Button>
                     <Link href="/provider/bookings">
                       <Button size="sm">Gestionar</Button>
                     </Link>
@@ -186,6 +202,15 @@ export default function ProviderDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Chat Modal */}
+      {selectedBooking && (
+        <ChatModal
+          booking={selectedBooking}
+          isOpen={!!selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+        />
+      )}
     </div>
   );
 }

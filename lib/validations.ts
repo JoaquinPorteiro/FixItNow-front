@@ -50,6 +50,24 @@ export const createAvailabilitySchema = z.object({
   path: ['endTime'],
 });
 
+export const updateAvailabilitySchema = z.object({
+  dayOfWeek: z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']).optional(),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)').optional(),
+  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)').optional(),
+}).refine((data) => {
+  if (data.startTime && data.endTime) {
+    const [startHour, startMinute] = data.startTime.split(':').map(Number);
+    const [endHour, endMinute] = data.endTime.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    return startMinutes < endMinutes;
+  }
+  return true;
+}, {
+  message: 'La hora de inicio debe ser menor que la hora de fin',
+  path: ['endTime'],
+});
+
 // Booking Validations
 export const createBookingSchema = z.object({
   serviceId: z.string().uuid('ID de servicio inválido'),
