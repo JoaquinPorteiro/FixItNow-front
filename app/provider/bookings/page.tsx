@@ -408,33 +408,32 @@ export default function ProviderBookingsPage() {
               {bookingToUpdate && `${statusLabels[bookingToUpdate.newStatus]} Reserva`}
             </DialogTitle>
             <DialogDescription>
-              {bookingToUpdate && (
-                <>
-                  ¿Estás seguro de que deseas {getStatusActionLabel(bookingToUpdate.newStatus)} esta reserva?
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <p className="font-medium">{bookingToUpdate.booking.service?.title}</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Cliente: {bookingToUpdate.booking.consumer?.firstName}{' '}
-                      {bookingToUpdate.booking.consumer?.lastName}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {formatDateTime(
-                        bookingToUpdate.booking.date,
-                        bookingToUpdate.booking.startTime,
-                        bookingToUpdate.booking.endTime
-                      ).date}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {formatDateTime(
-                        bookingToUpdate.booking.date,
-                        bookingToUpdate.booking.startTime,
-                        bookingToUpdate.booking.endTime
-                      ).time}
-                    </p>
-                  </div>
-                </>
-              )}
+              {bookingToUpdate &&
+                `¿Estás seguro de que deseas ${getStatusActionLabel(bookingToUpdate.newStatus)} esta reserva?`}
             </DialogDescription>
+            {bookingToUpdate && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="font-medium">{bookingToUpdate.booking.service?.title}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cliente: {bookingToUpdate.booking.consumer?.firstName}{' '}
+                  {bookingToUpdate.booking.consumer?.lastName}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {formatDateTime(
+                    bookingToUpdate.booking.date,
+                    bookingToUpdate.booking.startTime,
+                    bookingToUpdate.booking.endTime
+                  ).date}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {formatDateTime(
+                    bookingToUpdate.booking.date,
+                    bookingToUpdate.booking.startTime,
+                    bookingToUpdate.booking.endTime
+                  ).time}
+                </p>
+              </div>
+            )}
           </DialogHeader>
           <DialogFooter>
             <Button

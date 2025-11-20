@@ -119,6 +119,15 @@ export interface UpdateBookingStatusDto {
   status: BookingStatus;
 }
 
+// Simplified booking for public availability checking
+export interface SimpleBooking {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: BookingStatus;
+}
+
 // API Error Response
 export interface ApiError {
   message: string | string[];

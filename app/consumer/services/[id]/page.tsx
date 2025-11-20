@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { useService } from '@/hooks/useServices';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
+import { useTimeBlocks, type TimeBlock } from '@/hooks/useTimeBlocks';
 import { bookingsAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { TimeBlockSelector } from '@/components/TimeBlockSelector';
 import { toast } from 'sonner';
 import type { DayOfWeek } from '@/types';
 
@@ -33,10 +36,26 @@ export default function ServiceDetailPage() {
   const { availabilities, isLoading: availabilitiesLoading } = useAvailabilities(serviceId);
 
   const [selectedDate, setSelectedDate] = useState('');
-  const [selectedStartTime, setSelectedStartTime] = useState('');
-  const [selectedEndTime, setSelectedEndTime] = useState('');
+  const [selectedBlock, setSelectedBlock] = useState<TimeBlock | null>(null);
   const [notes, setNotes] = useState('');
   const [isBooking, setIsBooking] = useState(false);
+
+  // Fetch existing bookings for the selected date
+  const { data: existingBookings } = useSWR(
+    selectedDate ? `/bookings/service/${serviceId}?date=${selectedDate}` : null,
+    () => bookingsAPI.getServiceBookings(serviceId, selectedDate),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  // Generate time blocks based on selected date and availabilities
+  const timeBlocks = useTimeBlocks({
+    selectedDate: selectedDate || null,
+    availabilities,
+    existingBookings: existingBookings || [],
+  });
 
   // Helper to get day of week from date
   const getDayOfWeek = (dateString: string): DayOfWeek => {
@@ -48,63 +67,31 @@ export default function ServiceDetailPage() {
     return days[date.getDay()];
   };
 
-  // Validate if booking time is within service availability
-  const validateBookingTime = (): string | null => {
-    if (!selectedDate || !selectedStartTime || !selectedEndTime || !availabilities) {
-      return 'Por favor completa todos los campos';
-    }
-
-    // Check if start time is before end time
-    if (selectedStartTime >= selectedEndTime) {
-      return 'La hora de inicio debe ser antes de la hora de fin';
-    }
-
-    const dayOfWeek = getDayOfWeek(selectedDate);
-    const formattedDay = DAY_NAMES[dayOfWeek];
-
-    // Find availabilities for this day
-    const dayAvailabilities = availabilities.filter(a => a.dayOfWeek === dayOfWeek);
-
-    if (dayAvailabilities.length === 0) {
-      return `El servicio no está disponible los ${formattedDay}s. Por favor selecciona otro día.`;
-    }
-
-    // Check if time range is within any availability
-    const isWithinAvailability = dayAvailabilities.some(avail =>
-      selectedStartTime >= avail.startTime && selectedEndTime <= avail.endTime
-    );
-
-    if (!isWithinAvailability) {
-      const availableHours = dayAvailabilities
-        .map(a => `${a.startTime} - ${a.endTime}`)
-        .join(', ');
-      return `El horario seleccionado no está disponible. Horarios disponibles para ${formattedDay}: ${availableHours}`;
-    }
-
-    return null;
+  // Reset selected block when date changes
+  const handleDateChange = (newDate: string) => {
+    setSelectedDate(newDate);
+    setSelectedBlock(null); // Clear block selection when date changes
   };
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate availability first
-    const validationError = validateBookingTime();
-    if (validationError) {
-      toast.error(validationError, { duration: 5000 });
+    // Validate that date and time block are selected
+    if (!selectedDate) {
+      toast.error('Por favor selecciona una fecha');
       return;
     }
 
-    // Format times to ensure HH:mm format (pad with zeros if needed)
-    const formatTime = (time: string): string => {
-      const [hours, minutes] = time.split(':');
-      return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
-    };
+    if (!selectedBlock) {
+      toast.error('Por favor selecciona un bloque de tiempo');
+      return;
+    }
 
     const bookingData = {
       serviceId,
       date: selectedDate,
-      startTime: formatTime(selectedStartTime),
-      endTime: formatTime(selectedEndTime),
+      startTime: selectedBlock.startTime,
+      endTime: selectedBlock.endTime,
       ...(notes.trim() && { notes: notes.trim() }),
     };
 
@@ -261,99 +248,60 @@ export default function ServiceDetailPage() {
 
       {/* Booking Form */}
       {service.isActive && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Reservar Servicio</CardTitle>
-            <CardDescription>
-              Selecciona la fecha y hora para tu reserva
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleBooking} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Fecha</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Reservar Servicio</CardTitle>
+              <CardDescription>
+                Selecciona la fecha y luego el bloque horario de 1 hora que prefieras
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleBooking} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">Hora de inicio</Label>
+                  <Label htmlFor="date">Fecha</Label>
                   <Input
-                    id="startTime"
-                    type="time"
-                    value={selectedStartTime}
-                    onChange={(e) => setSelectedStartTime(e.target.value)}
+                    id="date"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
                     required
                   />
                 </div>
 
+                {/* Time Block Selector */}
+                {selectedDate && (
+                  <TimeBlockSelector
+                    blocks={timeBlocks}
+                    selectedBlock={selectedBlock}
+                    onSelectBlock={setSelectedBlock}
+                    isLoading={availabilitiesLoading}
+                  />
+                )}
+
                 <div className="space-y-2">
-                  <Label htmlFor="endTime">Hora de fin</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={selectedEndTime}
-                    onChange={(e) => setSelectedEndTime(e.target.value)}
-                    required
+                  <Label htmlFor="notes">Notas (opcional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Agrega cualquier información adicional para el proveedor..."
+                    rows={3}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notas (opcional)</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Agrega cualquier información adicional para el proveedor..."
-                  rows={3}
-                />
-              </div>
-
-              {/* Real-time validation feedback */}
-              {selectedDate && selectedStartTime && selectedEndTime && (
-                <>
-                  {(() => {
-                    const error = validateBookingTime();
-                    if (error) {
-                      return (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <p className="text-sm text-red-800">
-                            <strong>⚠️ Error:</strong> {error}
-                          </p>
-                        </div>
-                      );
-                    } else {
-                      const dayOfWeek = getDayOfWeek(selectedDate);
-                      return (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                          <p className="text-sm text-green-800">
-                            <strong>✓ Horario válido:</strong> {DAY_NAMES[dayOfWeek]} de {selectedStartTime} a {selectedEndTime}
-                          </p>
-                        </div>
-                      );
-                    }
-                  })()}
-                </>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isBooking}
-              >
-                {isBooking ? 'Reservando...' : 'Confirmar Reserva'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isBooking || !selectedDate || !selectedBlock}
+                >
+                  {isBooking ? 'Reservando...' : 'Confirmar Reserva'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );

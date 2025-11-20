@@ -13,6 +13,7 @@ import type {
   Booking,
   CreateBookingDto,
   UpdateBookingStatusDto,
+  SimpleBooking,
   ApiError,
 } from '@/types';
 
@@ -51,7 +52,7 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
       }
     }
     return Promise.reject(error);
@@ -141,6 +142,13 @@ export const bookingsAPI = {
 
   getById: async (id: string): Promise<Booking> => {
     const response = await api.get<Booking>(`/bookings/${id}`);
+    return response.data;
+  },
+
+  getServiceBookings: async (serviceId: string, date?: string): Promise<SimpleBooking[]> => {
+    const response = await api.get<SimpleBooking[]>(`/bookings/service/${serviceId}`, {
+      params: date ? { date } : {},
+    });
     return response.data;
   },
 

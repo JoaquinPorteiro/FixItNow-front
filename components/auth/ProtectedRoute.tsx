@@ -17,7 +17,7 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        router.push('/login');
+        router.push('/auth/login');
       } else if (requireRole && user?.role !== requireRole) {
         // Redirect to appropriate dashboard based on user role
         if (user?.role === 'CONSUMER') {
