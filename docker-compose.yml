@@ -1,0 +1,29 @@
+# Docker Compose para Frontend Standalone
+# Este archivo permite construir y ejecutar SOLO el frontend
+# Útil para desarrollo cuando el backend ya está corriendo localmente
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: fixitnow-frontend-standalone
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      # Montar código fuente para hot reload
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    stdin_open: true
+    tty: true
+
+# Nota: Este compose NO incluye backend ni postgres
+# Asume que el backend ya está corriendo en localhost:3000
+#
+# Para levantar el stack completo (frontend + backend + postgres),
+# usa el docker-compose.yml de la raíz del proyecto:
+# cd .. && docker-compose up

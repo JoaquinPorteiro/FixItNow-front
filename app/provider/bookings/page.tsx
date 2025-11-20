@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useBookings } from '@/hooks/useBookings';
+import { useChat } from '@/contexts/ChatContext';
 import { bookingsAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,10 +40,22 @@ const statusLabels = {
 
 export default function ProviderBookingsPage() {
   const { bookings, isLoading, mutate } = useBookings();
+  const { currentChatBookingId } = useChat();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [bookingToUpdate, setBookingToUpdate] = useState<{ booking: Booking; newStatus: BookingStatus } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Listen to currentChatBookingId from notifications
+  // When a notification's "Abrir Chat" button is clicked, open that chat
+  useEffect(() => {
+    if (currentChatBookingId && bookings) {
+      const booking = bookings.find(b => b.id === currentChatBookingId);
+      if (booking) {
+        setSelectedBooking(booking);
+      }
+    }
+  }, [currentChatBookingId, bookings]);
 
   // Filter bookings by status
   const pendingBookings = bookings?.filter(b => b.status === 'PENDING') || [];

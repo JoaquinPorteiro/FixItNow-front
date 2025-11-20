@@ -29,20 +29,26 @@ export function ChatModal({ booking, isOpen, onClose }: ChatModalProps) {
 
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Open chat when modal opens
+  // Open chat when modal opens and socket is connected
   useEffect(() => {
-    if (isOpen && booking?.id && isConnected) {
-      openChat(booking.id);
-      setIsInitialized(true);
+    if (isOpen && booking?.id) {
+      if (isConnected) {
+        // Socket is connected, open chat immediately
+        openChat(booking.id);
+        setIsInitialized(true);
+      } else {
+        // Socket not connected yet, wait for connection
+        setIsInitialized(false);
+      }
     }
 
     return () => {
-      if (isOpen) {
+      if (isInitialized) {
         closeChat();
         setIsInitialized(false);
       }
     };
-  }, [isOpen, booking?.id, isConnected]);
+  }, [isOpen, booking?.id, isConnected, isInitialized, openChat, closeChat]);
 
   // Mark unread messages as read when chat is viewed
   useEffect(() => {
@@ -56,7 +62,7 @@ export function ChatModal({ booking, isOpen, onClose }: ChatModalProps) {
         markMessagesAsRead(messageIds);
       }
     }
-  }, [isOpen, messages, user, markMessagesAsRead]);
+  }, [isOpen, messages, user]);
 
   if (!isOpen) return null;
 

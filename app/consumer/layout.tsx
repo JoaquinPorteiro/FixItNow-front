@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ChatModalGlobal, NotificationsDropdown } from '@/components/chat';
 
 export default function ConsumerLayout({
   children,
@@ -50,6 +51,9 @@ export default function ConsumerLayout({
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                {/* Notifications Dropdown */}
+                <NotificationsDropdown />
+
                 <span className="text-sm text-muted-foreground">
                   {user?.firstName} {user?.lastName}
                 </span>
@@ -63,6 +67,9 @@ export default function ConsumerLayout({
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">{children}</main>
+
+        {/* Global Chat Modal */}
+        <ChatModalGlobal />
       </div>
     </ProtectedRoute>
   );

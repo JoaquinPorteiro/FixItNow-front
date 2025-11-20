@@ -1,6 +1,9 @@
 export { ChatModal } from './ChatModal';
+export { ChatModalGlobal } from './ChatModalGlobal';
 export { MessageList } from './MessageList';
 export { MessageBubble } from './MessageBubble';
 export { MessageInput } from './MessageInput';
 export { TypingIndicator } from './TypingIndicator';
 export { ChatNotification } from './ChatNotification';
+export { ChatNotificationToast } from './ChatNotificationToast';
+export { NotificationsDropdown } from './NotificationsDropdown';

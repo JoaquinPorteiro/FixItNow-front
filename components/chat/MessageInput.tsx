@@ -22,25 +22,29 @@ export function MessageInput({ onSendMessage, onTyping, disabled = false }: Mess
 
   // Handle typing indicator
   useEffect(() => {
-    if (message.trim() && !isTyping) {
-      setIsTyping(true);
-      onTyping(true);
-    } else if (!message.trim() && isTyping) {
-      setIsTyping(false);
-      onTyping(false);
-    }
-
     // Clear previous timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Set new timeout to stop typing indicator after 1.5s of inactivity
     if (message.trim()) {
+      // User is typing
+      if (!isTyping) {
+        setIsTyping(true);
+        onTyping(true);
+      }
+
+      // Set timeout to stop typing indicator after 1.5s of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         setIsTyping(false);
         onTyping(false);
       }, 1500);
+    } else {
+      // Message is empty, stop typing indicator
+      if (isTyping) {
+        setIsTyping(false);
+        onTyping(false);
+      }
     }
 
     return () => {
@@ -48,7 +52,8 @@ export function MessageInput({ onSendMessage, onTyping, disabled = false }: Mess
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [message, onTyping, isTyping]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [message]);
 
   const handleSend = () => {
     if (!message.trim() || disabled) return;

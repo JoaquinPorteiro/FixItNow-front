@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useBookings } from '@/hooks/useBookings';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,19 @@ const statusLabels = {
 
 export default function ConsumerDashboard() {
   const { bookings, isLoading } = useBookings();
-  const { unreadCount } = useChat();
+  const { unreadCount, currentChatBookingId } = useChat();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  // Listen to currentChatBookingId from notifications
+  // When a notification's "Abrir Chat" button is clicked, open that chat
+  useEffect(() => {
+    if (currentChatBookingId && bookings) {
+      const booking = bookings.find(b => b.id === currentChatBookingId);
+      if (booking) {
+        setSelectedBooking(booking);
+      }
+    }
+  }, [currentChatBookingId, bookings]);
 
   const upcomingBookings = bookings?.filter(
     (b) => b.status !== 'CANCELLED' && b.status !== 'COMPLETED'
