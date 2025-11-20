@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import { Socket } from 'socket.io-client';
@@ -57,6 +58,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<ChatNotificationItem[]>([]);
 
+  // Use ref to always have access to the latest currentChatBookingId in event handlers
+  const currentChatBookingIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentChatBookingIdRef.current = currentChatBookingId;
+  }, [currentChatBookingId]);
+
   // Initialize socket connection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -79,9 +88,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const handleReconnect = () => {
         console.log('Chat socket reconnected');
         setIsConnected(true);
-        // Re-join current chat room if any
-        if (currentChatBookingId) {
-          socketInstance.emit('join_booking_chat', { bookingId: currentChatBookingId });
+        // Re-join current chat room if any (use ref to get latest value)
+        const currentBookingId = currentChatBookingIdRef.current;
+        if (currentBookingId) {
+          socketInstance.emit('join_booking_chat', { bookingId: currentBookingId });
         }
         // Request unread count on reconnect
         socketInstance.emit('get_unread_count');
@@ -92,14 +102,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       };
 
       const handleNewMessage = (message: Message) => {
-        setMessages((prev) => [...prev, message]);
+        // Use ref to get the latest currentChatBookingId value
+        const currentBookingId = currentChatBookingIdRef.current;
+
+        // Only add message to messages array if it belongs to the currently open chat
+        if (currentBookingId && message.bookingId === currentBookingId) {
+          setMessages((prev) => [...prev, message]);
+        }
 
         // If message is not from current user, increment unread count
         if (message.senderId !== user.id) {
           setUnreadCount((prev) => prev + 1);
 
           // Show notification if no chat is currently open OR if the message is from a different booking
-          const shouldNotify = currentChatBookingId === null || currentChatBookingId !== message.bookingId;
+          const shouldNotify = currentBookingId === null || currentBookingId !== message.bookingId;
 
           if (shouldNotify) {
             // Add to notifications list
@@ -118,9 +134,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               action: {
                 label: 'Abrir Chat',
                 onClick: () => {
+                  // Use ref to get the latest value
+                  const currentBookingIdInToast = currentChatBookingIdRef.current;
+
                   // Leave previous chat if any
-                  if (currentChatBookingId) {
-                    socketInstance.emit('leave_booking_chat', { bookingId: currentChatBookingId });
+                  if (currentBookingIdInToast) {
+                    socketInstance.emit('leave_booking_chat', { bookingId: currentBookingIdInToast });
                   }
 
                   // Join the new chat
